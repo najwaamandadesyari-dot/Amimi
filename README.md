@@ -1,40 +1,40 @@
-#  AMIMI SHOP - Sistem E-Commerce Modern
+# AMIMI SHOP - Sistem E-Commerce Modern
 
-Sistem e-commerce lengkap dengan tampilan **Shopee-like** yang responsif dan profesional. Mendukung manajemen produk, keranjang belanja, checkout dengan multiple payment methods, dan tracking pesanan.
+Sistem e-commerce lengkap dengan tampilan responsif dan profesional. Proyek ini mendukung manajemen produk, keranjang belanja, checkout dengan beberapa metode pembayaran, serta tracking pesanan untuk pembeli dan admin.
 
 ---
 
-##  Fitur Utama
+## Fitur Utama
 
-### Untuk Pembeli (Customer)
- Dashboard pembeli dengan statistik
- Toko produk dengan grid layout modern  
- Filter & search produk
- Sorting (terbaru, harga terendah/tertinggi)
- Keranjang belanja interaktif
- Checkout dengan 3 metode pembayaran
- Pre-order & tracking pesanan
- Profil & edit data pribadi
- Responsive design (mobile-friendly)
+### Untuk Pembeli
+- Dashboard pembeli dengan statistik
+- Toko produk dengan layout modern
+- Filter dan pencarian produk
+- Sorting berdasarkan terbaru, harga terendah, dan tertinggi
+- Keranjang belanja interaktif
+- Checkout dengan 3 metode pembayaran
+- Pre-order dan tracking pesanan
+- Profil serta edit data pribadi
+- Tampilan responsif untuk mobile
 
 ### Untuk Admin
- Dashboard dengan KPI bisnis
- Manajemen produk (CRUD lengkap)
- Kategori produk
- Manajemen pesanan & status
- Tracking profit & loss
- Update stok otomatis
+- Dashboard dengan KPI bisnis
+- Manajemen produk (CRUD lengkap)
+- Kategori produk
+- Manajemen pesanan dan status
+- Tracking profit dan loss
+- Update stok otomatis
 
 ### Keamanan
- Password hashing BCRYPT
- CSRF protection di semua form
- Session management
- Input sanitization
- Validasi data
+- Password hashing dengan bcrypt
+- CSRF protection pada form
+- Session management
+- Input sanitization
+- Validasi data
 
 ---
 
-##  Struktur File
+## Struktur File
 
 ```
 Amimi/
