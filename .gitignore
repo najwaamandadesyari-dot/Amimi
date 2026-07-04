@@ -1,0 +1,22 @@
+# Environment and local config
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+
+# Temporary files
+*.tmp
+
+# Composer / vendor (if used later)
+/vendor/
+
+# Local uploads (optional)
+/uploads/*
