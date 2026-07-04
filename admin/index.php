@@ -1,0 +1,162 @@
+<?php
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/functions.php';
+
+requireAdmin();
+
+// 1. Jumlah Produk Terjual (Total items in non-cancelled orders)
+$soldRes = $conn->query("
+    SELECT SUM(oi.quantity) as total_sold 
+    FROM order_items oi 
+    JOIN orders o ON oi.order_id = o.id 
+    WHERE o.order_status != 'cancelled'
+");
+$totalSold = $soldRes->fetch_assoc()['total_sold'] ?? 0;
+
+// 2. Jumlah Produk di Katalog
+$prodCountRes = $conn->query("SELECT COUNT(*) as total_products FROM products");
+$totalProducts = $prodCountRes->fetch_assoc()['total_products'] ?? 0;
+
+// 3. Total Unit Stok Saat Ini (Jumlah produk terbeli/tersedia)
+$stockRes = $conn->query("SELECT SUM(stock) as total_stock FROM products");
+$totalStock = $stockRes->fetch_assoc()['total_stock'] ?? 0;
+
+// 4. Keuntungan & Kerugian (Profit & Loss)
+// Profit = (selling_price - cost_price) * quantity for successful orders
+$plRes = $conn->query("
+    SELECT 
+        SUM(oi.price * oi.quantity) as total_revenue,
+        SUM(oi.cost_price * oi.quantity) as total_cogs
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.id
+    WHERE o.order_status = 'delivered' AND o.payment_status = 'confirmed'
+");
+$plData = $plRes->fetch_assoc();
+$revenue = $plData['total_revenue'] ?? 0;
+$cogs = $plData['total_cogs'] ?? 0;
+$profit = $revenue - $cogs;
+
+// 5. Total order pending count
+$pendingOrdersRes = $conn->query("SELECT COUNT(*) as pending_count FROM orders WHERE order_status = 'pending'");
+$pendingCount = $pendingOrdersRes->fetch_assoc()['pending_count'] ?? 0;
+
+// 6. Recent Orders
+$recentOrders = $conn->query("
+    SELECT o.*, u.name as customer_name 
+    FROM orders o 
+    JOIN users u ON o.user_id = u.id 
+    ORDER BY o.id DESC 
+    LIMIT 5
+");
+
+$pageTitle = 'Admin Dashboard';
+include __DIR__ . '/../includes/header.php';
+?>
+
+<div class="container" style="padding-top: 20px;">
+    <div class="admin-section-header">
+        <h1 style="font-size: 28px; margin-bottom: 0;">‍ Dashboard Admin</h1>
+        <div style="font-size: 14px; color: var(--text-muted);">Selamat Datang, <strong><?= htmlspecialchars($_SESSION['user_name']) ?></strong></div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="admin-grid" style="margin-top: 30px;">
+        <!-- Card 1: Produk Terjual -->
+        <div class="stat-card">
+            <span class="stat-card-title">Produk Terjual</span>
+            <div class="stat-card-value"><?= $totalSold ?> <span style="font-size: 18px; color: var(--text-muted);">Pcs</span></div>
+            <div class="stat-card-footer text-success"> Transaksi berjalan sukses</div>
+        </div>
+
+        <!-- Card 2: Jumlah Produk Katalog -->
+        <div class="stat-card">
+            <span class="stat-card-title">Jumlah Produk</span>
+            <div class="stat-card-value"><?= $totalProducts ?> <span style="font-size: 18px; color: var(--text-muted);">Item</span></div>
+            <div class="stat-card-footer text-info"> Total variasi dalam katalog</div>
+        </div>
+
+        <!-- Card 3: Total Stok Saat Ini -->
+        <div class="stat-card">
+            <span class="stat-card-title">Total Stok Tersedia</span>
+            <div class="stat-card-value"><?= $totalStock ?> <span style="font-size: 18px; color: var(--text-muted);">Pcs</span></div>
+            <div class="stat-card-footer text-warning"> Siap dipesan pelanggan</div>
+        </div>
+
+        <!-- Card 4: Keuntungan Bersih -->
+        <div class="stat-card">
+            <span class="stat-card-title">Keuntungan Bersih</span>
+            <div class="stat-card-value <?= $profit >= 0 ? 'text-success' : 'text-danger' ?>">
+                <?= formatRupiah($profit) ?>
+            </div>
+            <div class="stat-card-footer" style="color: var(--text-muted);">
+                Omset: <?= formatRupiah($revenue) ?> | HPP: <?= formatRupiah($cogs) ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Orders Alert Callout -->
+    <?php if ($pendingCount > 0): ?>
+        <div style="background-color: rgba(255, 171, 0, 0.1); border: 1px solid var(--warning); border-radius: 12px; padding: 20px; margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <span style="font-size: 32px;"></span>
+                <div>
+                    <h3 style="font-size: 18px; color: var(--warning);">Ada <?= $pendingCount ?> Pesanan Menunggu Konfirmasi</h3>
+                    <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">Segera terima dan proses pesanan untuk mempercepat pengiriman barang.</p>
+                </div>
+            </div>
+            <a href="/Amimi/admin/orders.php?status=pending" class="btn btn-gold btn-sm">Kelola Pesanan →</a>
+        </div>
+    <?php endif; ?>
+
+    <!-- Recent Orders Section -->
+    <div class="admin-section">
+        <div class="admin-section-header">
+            <h2 style="font-size: 20px; margin-bottom: 0;"> Pesanan Terbaru Masuk</h2>
+            <a href="/Amimi/admin/orders.php" class="btn btn-outline btn-sm">Lihat Semua Pesanan</a>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No. Pesanan</th>
+                        <th>Pelanggan</th>
+                        <th>Metode Bayar</th>
+                        <th>Total Amount</th>
+                        <th>Status Pembayaran</th>
+                        <th>Status Pesanan</th>
+                        <th>Tanggal</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($recentOrders->num_rows > 0): ?>
+                        <?php while ($order = $recentOrders->fetch_assoc()): 
+                            $status = getOrderStatusLabel($order['order_status']);
+                            $payment = getPaymentStatusLabel($order['payment_status']);
+                        ?>
+                            <tr>
+                                <td><strong style="color: var(--primary-gold);"><?= htmlspecialchars($order['order_number']) ?></strong></td>
+                                <td><?= htmlspecialchars($order['customer_name']) ?></td>
+                                <td><?= getPaymentMethodLabel($order['payment_method']) ?></td>
+                                <td><?= formatRupiah($order['total_amount']) ?></td>
+                                <td><span class="badge <?= $payment['class'] ?>"><?= $payment['label'] ?></span></td>
+                                <td><span class="badge <?= $status['class'] ?>"><?= $status['label'] ?></span></td>
+                                <td><?= date('d M Y H:i', strtotime($order['created_at'])) ?></td>
+                                <td>
+                                    <a href="/Amimi/admin/order_detail.php?id=<?= $order['id'] ?>" class="btn btn-outline btn-sm">Kelola </a>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--text-muted);">Belum ada pesanan masuk.</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<?php include __DIR__ . '/../includes/footer.php'; ?>
